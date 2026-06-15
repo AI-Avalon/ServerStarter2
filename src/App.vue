@@ -57,7 +57,10 @@ watch(
 // サーバー起動時に画面遷移
 window.API.onStartServer((_event, worldID, notification) => {
   consoleStore.setConsole(worldID, '', false);
-  mainStore.setWorldIP(worldID, notification.ngrokURL);
+  mainStore.setWorldIP(
+    worldID,
+    notification.publicAddress ?? notification.ngrokURL
+  );
   propertyStore.setServerPort(worldID, notification.port);
 });
 // サーバー終了時に画面遷移

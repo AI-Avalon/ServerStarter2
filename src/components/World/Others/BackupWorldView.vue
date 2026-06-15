@@ -92,6 +92,60 @@ onMounted(() => {
       {{ showingMessage }}
     </div>
   </div>
+  <q-separator class="q-my-md" />
+  <div v-if="mainStore.world" class="column q-gutter-sm">
+    <q-toggle
+      v-model="mainStore.world.backup_setting.enabled"
+      :label="$T('others.backup.scheduleEnabled')"
+      :disable="consoleStore.status(mainStore.selectedWorldID) !== 'Stop'"
+    />
+    <div class="row q-gutter-md">
+      <q-input
+        v-model.number="mainStore.world.backup_setting.intervalHours"
+        type="number"
+        dense
+        outlined
+        :min="1"
+        :label="$T('others.backup.intervalHours')"
+        :disable="
+          !mainStore.world.backup_setting.enabled ||
+          consoleStore.status(mainStore.selectedWorldID) !== 'Stop'
+        "
+        style="width: 12rem"
+      />
+      <q-input
+        v-model.number="mainStore.world.backup_setting.maxBackups"
+        type="number"
+        dense
+        outlined
+        :min="1"
+        :label="$T('others.backup.maxBackups')"
+        :disable="
+          !mainStore.world.backup_setting.enabled ||
+          consoleStore.status(mainStore.selectedWorldID) !== 'Stop'
+        "
+        style="width: 12rem"
+      />
+    </div>
+    <div class="row q-gutter-md">
+      <q-checkbox
+        v-model="mainStore.world.backup_setting.beforeStart"
+        :label="$T('others.backup.beforeStart')"
+        :disable="
+          !mainStore.world.backup_setting.enabled ||
+          consoleStore.status(mainStore.selectedWorldID) !== 'Stop'
+        "
+      />
+      <q-checkbox
+        v-model="mainStore.world.backup_setting.afterStop"
+        :label="$T('others.backup.afterStop')"
+        :disable="
+          !mainStore.world.backup_setting.enabled ||
+          consoleStore.status(mainStore.selectedWorldID) !== 'Stop'
+        "
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">

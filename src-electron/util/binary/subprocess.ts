@@ -99,11 +99,13 @@ export const interactiveProcess = (
   cwd: Path | undefined = undefined,
   shell = false,
   beforeKill: (child: ChildProcessPromise) => void | Promise<void> = () => {},
-  beforeKillTimeout = 1000
+  beforeKillTimeout = 1000,
+  env: NodeJS.ProcessEnv = process.env
 ): ChildProcessPromise => {
   const child = child_process.spawn(process.quotedPath, args, {
     cwd: cwd?.path,
     shell,
+    env,
     stdio: ['pipe', onout ? 'pipe' : 'ignore', onerr ? 'pipe' : 'ignore'],
   });
 

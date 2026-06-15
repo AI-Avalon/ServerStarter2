@@ -13,7 +13,7 @@ const paperAllVersionsZod = z.object({
   project_name: z.enum(['Paper']),
   version_groups: z.string().array(),
   versions: z.string().array(),
-});
+}).passthrough();
 // 各バージョンのビルド情報一覧を返すURLとその解析パーサー
 const paperEachVersionURL = (versionName: string) =>
   `https://api.papermc.io/v2/projects/paper/versions/${versionName}`;
@@ -22,7 +22,7 @@ const paperEachVersionZod = z.object({
   project_name: z.enum(['Paper']),
   version: z.string().transform((val) => val as VersionId),
   builds: z.number().array(),
-});
+}).passthrough();
 
 /**
  * Paper版のVersionLoaderを作成

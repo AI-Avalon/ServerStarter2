@@ -32,6 +32,37 @@ export function getBackUpPath(container: WorldContainer, name: WorldName) {
   return path;
 }
 
+export async function pruneBackups(
+  container: WorldContainer,
+  name: WorldName,
+  maxBackups: number
+): Promise<Failable<void>> {
+  const directory = worldContainerToPath(container).child(BACKUP_DIRECTORY_NAME);
+  if (!directory.exists()) return;
+
+  const files = await directory.iter();
+  if (isError(files)) return files;
+
+  const backups = (
+    await Promise.all(
+      files
+        .filter((path) => path.extname() === `.${BACKUP_EXT}`)
+        .map(async (path) => ({ path, data: await parseBackUpPath(path) }))
+    )
+  )
+    .filter(
+      (
+        item
+      ): item is {
+        path: Path;
+        data: BackupData & { time?: Timestamp };
+      } => !isError(item.data) && item.data.name === name
+    )
+    .sort((a, b) => (b.data.time ?? 0) - (a.data.time ?? 0));
+
+  await Promise.all(backups.slice(maxBackups).map((backup) => backup.path.remove()));
+}
+
 export async function parseBackUpPath(
   path: Path
 ): Promise<Failable<BackupData>> {

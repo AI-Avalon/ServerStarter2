@@ -142,6 +142,7 @@ const api: FrontAPI = {
   invokeDeleteRemoteWorld: invoke('DeleteRemoteWorld'),
 
   invokeGetGlobalIP: invoke('GetGlobalIP'),
+  invokeClearManagedRuntimeCache: invoke('ClearManagedRuntimeCache'),
 
   invokeValidateNewWorldName: invoke('ValidateNewWorldName'),
 

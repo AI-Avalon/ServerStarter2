@@ -22,6 +22,7 @@ const translationArgs: Record<string, FullKeys<MessageSchema>> = {
   forge: 'home.serverType.forge',
   mohistmc: 'home.serverType.mohistmc',
   fabric: 'home.serverType.fabric',
+  bedrock: 'home.serverType.bedrock',
   file: 'general.file',
   directory: 'general.directory',
   datapack: 'additionalContents.datapack',

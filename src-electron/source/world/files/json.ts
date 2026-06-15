@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { PlayerUUID, Timestamp, UUID } from 'app/src-electron/schema/brands';
+import { BackupScheduleSetting } from 'app/src-electron/schema/backup';
 import { MemorySettings } from 'app/src-electron/schema/memory';
 import { NgrokSetting } from 'app/src-electron/schema/ngrok';
+import { PublishSetting } from 'app/src-electron/schema/publish';
 import { Remote } from 'app/src-electron/schema/remote';
 import { Version } from 'app/src-electron/schema/version';
 import { errorMessage } from 'app/src-electron/util/error/construct';
@@ -57,6 +59,12 @@ export const WorldSettings = z.object({
 
   /** Ngrokによるポート開放不要化機能を利用するか */
   ngrok_setting: NgrokSetting,
+
+  /** ngrok/playit等による外部公開設定 */
+  publish_setting: PublishSetting.optional(),
+
+  /** 定期バックアップと世代管理の設定 */
+  backup_setting: BackupScheduleSetting,
 });
 export type WorldSettings = z.infer<typeof WorldSettings>;
 

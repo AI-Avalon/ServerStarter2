@@ -1,4 +1,3 @@
-import { Listener } from '@ngrok/ngrok';
 import { randomInt } from 'crypto';
 import { GroupProgressor } from 'app/src-electron/common/progress';
 import { api } from 'app/src-electron/core/api';
@@ -31,9 +30,9 @@ import { allocateTempDir } from 'app/src-electron/util/tempPath';
 import { getCurrentTimestamp } from 'app/src-electron/util/timestamp';
 import { pullRemoteWorld, pushRemoteWorld } from '../remote/remote';
 import { RunRebootableServer, runRebootableServer } from '../server/server';
-import { closeNgrok, runNgrok } from '../server/setup/ngrok';
+import { readyPublishSession } from '../server/setup/publish';
 import { getSystemSettings } from '../stores/system';
-import { getBackUpPath, parseBackUpPath } from './backup';
+import { getBackUpPath, parseBackUpPath, pruneBackups } from './backup';
 import { serverJsonFile, WorldSettings } from './files/json';
 import { serverPropertiesFile } from './files/properties';
 import {
@@ -44,7 +43,6 @@ import {
 } from './local';
 import { validateNewWorldName } from './name';
 import { getOpDiff } from './players';
-import { getWorld } from './world';
 import { worldContainerToPath } from './worldContainer';
 
 /** 複数の処理を並列で受け取って直列で処理 */
@@ -142,35 +140,6 @@ async function getDuplicateWorldName(
     result = await validateNewWorldName(container, worldName);
   }
   return result;
-}
-
-/**
- * Ngrokを利用する場合の処理
- *
- * Ngrokを利用する場合はlistenerを返す
- * Ngrokを利用しない場合はundefinedを返す
- */
-async function readyNgrok(
-  worldID: WorldID,
-  port: number
-): Promise<Failable<Listener | undefined>> {
-  const systemSettings = await getSystemSettings();
-  const token = systemSettings.user.ngrokToken ?? '';
-
-  // 各ワールドに設定されたUseNgrokの値に応じてNgrokの実行有無を制御
-  const world = await getWorld(worldID);
-  if (isError(world.value)) return world.value;
-
-  if (token !== '' && world.value.ngrok_setting.use_ngrok) {
-    const listener = runNgrok(
-      token,
-      port,
-      world.value.ngrok_setting.remote_addr
-    );
-    return listener;
-  }
-
-  return undefined;
 }
 
 /** ワールドの(取得/保存)/サーバーの実行を担うクラス */
@@ -687,8 +656,36 @@ export class WorldHandler {
     const failableWrite = await backupPath.write(tar);
     if (isError(failableWrite)) return withError(failableWrite);
 
+    await pruneBackups(
+      this.container,
+      this.name,
+      localJson.backup_setting.maxBackups
+    );
+
     // バックアップデータを返却
     return withError(await parseBackUpPath(backupPath));
+  }
+
+  private shouldRunScheduledBackup(
+    settings: WorldSettings,
+    timing: 'beforeStart' | 'afterStop'
+  ) {
+    const backup = settings.backup_setting;
+    if (!backup.enabled || !backup[timing]) return false;
+    if (!backup.lastBackupTime) return true;
+    const elapsed = getCurrentTimestamp() - backup.lastBackupTime;
+    return elapsed >= backup.intervalHours * 60 * 60 * 1000;
+  }
+
+  private async runScheduledBackup(
+    settings: WorldSettings,
+    timing: 'beforeStart' | 'afterStop'
+  ) {
+    if (!this.shouldRunScheduledBackup(settings, timing)) return;
+    const result = await this.backupExec();
+    if (isError(result.value)) return;
+    settings.backup_setting.lastBackupTime = getCurrentTimestamp();
+    await this.saveLocalServerJson(settings);
   }
 
   /** ワールドにバックアップを復元 */
@@ -815,17 +812,25 @@ export class WorldHandler {
     beforeWorld: World,
     ngrokToken: string | undefined
   ): Promise<Failable<number>> {
-    if (beforeWorld.ngrok_setting.use_ngrok && ngrokToken) {
+    if (
+      beforeWorld.version.type !== 'bedrock' &&
+      beforeWorld.ngrok_setting.use_ngrok &&
+      ngrokToken
+    ) {
       // Ngrokを使用する場合 開いてるポートを適当に使う
       const portnum = await this.getFreePort();
       if (isError(portnum)) return portnum;
       return portnum;
     } else {
       // Ngrokを使用しない場合 ポートが空いてるかチェック
-      let port = 25565;
+      let port = beforeWorld.version.type === 'bedrock' ? 19132 : 25565;
       if (isValid(beforeWorld.properties)) {
         const serverPort = beforeWorld.properties['server-port'];
-        if (typeof serverPort === 'number') port = serverPort;
+        if (
+          typeof serverPort === 'number' &&
+          (beforeWorld.version.type !== 'bedrock' || serverPort !== 25565)
+        )
+          port = serverPort;
       }
 
       const portIsUsed = !(await this.checkPortAvailability(port));
@@ -885,6 +890,8 @@ export class WorldHandler {
     const settings = constructWorldSettings(beforeWorld);
     const savePath = this.getSavePath();
 
+    await this.runScheduledBackup(settings, 'beforeStart');
+
     // ポート番号を取得
     const port = await this.definePortNumber(
       beforeWorld,
@@ -911,9 +918,14 @@ export class WorldHandler {
 
     // ポートを登録
     this.port = port;
-    // ngrokが必要な場合は起動
-    const ngrokListener = await readyNgrok(this.id, port);
-    if (isError(ngrokListener)) return withError(ngrokListener);
+    // 外部公開が必要な場合は起動
+    const publishSession = await readyPublishSession({
+      setting: beforeWorld.publish_setting,
+      version: beforeWorld.version,
+      token: sysSettings.user.ngrokToken,
+      port,
+    });
+    if (isError(publishSession)) return withError(publishSession);
 
     // 使用中フラグを立てて保存
     // 使用中フラグを折って保存を試みる (無理なら諦める)
@@ -939,8 +951,13 @@ export class WorldHandler {
 
     const notification: ServerStartNotification = { port };
 
-    const ngrokURL = ngrokListener?.url();
-    if (ngrokURL) notification.ngrokURL = ngrokURL.slice(6);
+    if (publishSession?.status.publicAddress) {
+      notification.publicAddress = publishSession.status.publicAddress;
+      if (publishSession.status.provider === 'ngrok') {
+        notification.ngrokURL = publishSession.status.publicAddress;
+      }
+    }
+    if (publishSession?.status) notification.publish = publishSession.status;
 
     // サーバーの実行を開始
     const runPromise = runRebootableServer(
@@ -960,8 +977,8 @@ export class WorldHandler {
 
     // ポートを削除
     this.port = undefined;
-    // Ngrokを閉じる
-    if (ngrokListener) await closeNgrok(ngrokListener);
+    // 外部公開セッションを閉じる
+    if (publishSession) await publishSession.close();
 
     this.runner = undefined;
 
@@ -975,6 +992,7 @@ export class WorldHandler {
     // 使用中フラグを折って保存を試みる (無理なら諦める)
     settings.using = false;
     beforeWorld.last_date = getCurrentTimestamp();
+    await this.runScheduledBackup(settings, 'afterStop');
     const saveSub = progress.subtitle({ key: 'server.save.localSetting' });
     await serverJsonFile.save(savePath, settings);
     saveSub.delete();

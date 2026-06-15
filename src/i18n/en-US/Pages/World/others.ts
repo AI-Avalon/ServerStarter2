@@ -16,6 +16,11 @@ export const enOthers: MessageSchema['others'] = {
     recoverFromBackup: 'Recover from backup',
     madeBackup: 'Made backup of {world}',
     recovered: 'FInish world recovering',
+    scheduleEnabled: 'Enable scheduled backups',
+    intervalHours: 'Backup interval (hours)',
+    maxBackups: 'Max backups',
+    beforeStart: 'Create before server start',
+    afterStop: 'Create after server stop',
   },
   worldFolder: {
     title: 'World folder',

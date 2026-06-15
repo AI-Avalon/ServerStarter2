@@ -9,24 +9,26 @@ export type ServerProcess = Promise<Failable<undefined>> & {
   kill: () => Promise<void>;
 };
 
-/** javaのサブプロセスを起動 */
+/** サーバーのサブプロセスを起動 */
 export function serverProcess(
   cwdPath: Path,
   id: WorldID,
-  javaPath: Path,
+  processPath: Path,
   args: string[],
   console: (value: string, isError: boolean) => void,
   onStart: () => void,
-  onFinish: () => void
+  onFinish: () => void,
+  option?: {
+    stopCommand?: string;
+    env?: NodeJS.ProcessEnv;
+  }
 ): ServerProcess {
-  // javaのサブプロセスを起動
-  // TODO: エラー出力先のハンドル
-
   const stdout = (chunk: string) => splitLine(chunk, false, console);
   const stderr = (chunk: string) => splitLine(chunk, true, console);
+  const stopCommand = option?.stopCommand ?? 'stop';
 
   const process = interactiveProcess(
-    javaPath,
+    processPath,
     args,
     stdout,
     stderr,
@@ -34,10 +36,11 @@ export function serverProcess(
     true,
     // アプリケーション終了時/stopコマンドを実行 (実行から10秒のタイムアウトでプロセスキル)
     async (process) => {
-      await process.write('stop');
+      await process.write(stopCommand);
       await process;
     },
-    10000
+    10000,
+    option?.env
   );
 
   async function run() {

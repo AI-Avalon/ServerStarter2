@@ -46,3 +46,40 @@ Minecraft のマルチプレイサーバーを簡単に起動します！
 
   </div>
 </details>
+
+## 開発・検証環境
+
+このリポジトリは Node.js 20.x でのビルドを推奨します。
+
+```sh
+yarn install --frozen-lockfile
+yarn test --run
+yarn lint
+yarn build
+```
+
+## Bedrock / 公開機能
+
+- Bedrock Dedicated Server は Minecraft 公式の stable 版ダウンロード情報から取得します。Preview 版は自動取得対象外です。
+- Bedrock サーバーは Java ランタイムを使わず、ServerStarter2 のアプリ管理キャッシュへ展開した実行ファイルを利用します。
+- Java サーバーの外部公開は ngrok または playit.gg を利用できます。
+- Bedrock は UDP を使うため ngrok では公開できません。Bedrock の外部公開には playit.gg agent を利用します。
+- playit.gg agent は初回利用時にアプリ管理キャッシュへ自動ダウンロードされます。OS 全体への winget/apt インストールは行いません。
+- agent の claim URL が表示された場合はブラウザで開き、playit.gg アカウント側で登録してください。
+
+## ランタイムと復旧
+
+Java ランタイム、Bedrock Server、playit.gg agent は `userData/serverstarter/cache` 配下に隔離して管理します。キャッシュ破損や実行ファイル欠損が疑われる場合は、公開設定画面の再取得ボタンや管理キャッシュ削除APIから再取得できます。
+
+Windows/macOS の本体アップデートは既存通り GitHub Releases のインストーラーを利用します。Linux は自動インストールせず、更新通知のみ行います。アップデート取得に失敗してもアプリ起動は継続し、起動後にエラー通知を表示します。
+
+## バックアップ
+
+手動バックアップに加えて、ワールドごとに定期バックアップを設定できます。
+
+- バックアップ間隔
+- 最大保持数
+- サーバー起動前の作成
+- サーバー停止後の作成
+
+バックアップ形式は既存の `.ssbackup` を継続し、追加の7zip依存は導入していません。

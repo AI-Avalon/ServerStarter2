@@ -7,6 +7,7 @@ import { AllVersion, Version, VersionType } from '../../schema/version';
 import { Path } from '../../util/binary/path';
 import { getEulaAgreement, setEulaAgreement } from './eula';
 import { getVersionlist, VersionListLoader } from './getVersions/base';
+import { BedrockVersionLoader } from './getVersions/bedrock';
 import { FabricVersionLoader } from './getVersions/fabric';
 import { ForgeVersionLoader } from './getVersions/forge';
 import { MohistMCVersionLoader } from './getVersions/mohistmc';
@@ -54,6 +55,7 @@ export class VersionContainer {
       papermc: new PaperVersionLoader(cachePath),
       mohistmc: new MohistMCVersionLoader(cachePath),
       fabric: new FabricVersionLoader(cachePath),
+      bedrock: new BedrockVersionLoader(cachePath),
     } as const;
   }
 
@@ -112,6 +114,8 @@ export class VersionContainer {
           return new ReadyMohistMCVersion(version, this.cachePath);
         case 'fabric':
           return new ReadyFabricVersion(version, this.cachePath);
+        case 'bedrock':
+          return fromRuntimeError(new Error('BEDROCK_IS_NATIVE_SERVER'));
       }
     };
 
@@ -172,6 +176,8 @@ export class VersionContainer {
       case 'fabric':
         const fabricFp = new RemoveFabricVersion(version, this.cachePath);
         return fabricFp.completeRemoveVersion(path);
+      case 'bedrock':
+        return undefined;
     }
   }
 }

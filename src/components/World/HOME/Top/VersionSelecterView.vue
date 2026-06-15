@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import {
   AllFabricVersion,
+  AllBedrockVersion,
   AllForgeVersion,
   AllMohistmcVersion,
   AllPapermcVersion,
@@ -24,6 +25,7 @@ import ServerTypeItem from './VersionSelecter/ServerTypeItem.vue';
 import Spigot from './VersionSelecter/SpigotView.vue';
 import Vanilla from './VersionSelecter/VanillaView.vue';
 import { openVerTypeWarningDialog } from './VersionSelecter/versionComparator';
+import Bedrock from './VersionSelecter/BedrockView.vue';
 
 const $q = useQuasar();
 const sysStore = useSystemStore();
@@ -49,6 +51,9 @@ const mohistmcs = () => {
 };
 const fabrics = () => {
   return sysStore.serverVersions.get('fabric') as AllFabricVersion;
+};
+const bedrocks = () => {
+  return sysStore.serverVersions.get('bedrock') as AllBedrockVersion;
 };
 const validVersionTypes = versionTypes.filter(
   (serverType) => sysStore.serverVersions.get(serverType) !== void 0
@@ -117,5 +122,9 @@ const selectedVerType = computed({
   <Fabric
     v-else-if="mainStore.selectedVersionType === 'fabric'"
     :version-data="fabrics()"
+  />
+  <Bedrock
+    v-else-if="mainStore.selectedVersionType === 'bedrock'"
+    :version-data="bedrocks()"
   />
 </template>

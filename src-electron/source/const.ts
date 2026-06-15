@@ -23,6 +23,8 @@ export const tempPath = mainPath.child('serverstarter/temp');
 export const settingPath = mainPath.child('serverstarter/settings.ssconfig');
 
 export const runtimePath = cachePath.child('bin/runtime');
+export const bedrockRuntimePath = cachePath.child('bin/bedrock');
+export const playitRuntimePath = cachePath.child('bin/playit');
 export const versionsCachePath = cachePath.child('versions');
 
 export const ADDITIONALS_CACHE_PATH = cachePath.child('additionals');
