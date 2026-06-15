@@ -10,7 +10,7 @@ import { notifyUpdateError } from '../notify';
 /**
  * windowsの最新版をダウンロードしてインストールして再起動
  *
- * アップデートに失敗してもエラーで処理を止める必要がないため握りつぶす
+ * アップデートに失敗した場合は通知だけ行い、アプリの処理は中断しない
  */
 export const installWindows = async (
   msiurl: string,

@@ -49,7 +49,7 @@ Minecraft のマルチプレイサーバーを簡単に起動します！
 
 ## 開発・検証環境
 
-このリポジトリは Node.js 20.x でのビルドを推奨します。
+このリポジトリは `package.json` の engines に合わせて Node.js 16/18/20 系で動作します。開発・検証では Node.js 20.x を推奨します。
 
 ```sh
 yarn install --frozen-lockfile

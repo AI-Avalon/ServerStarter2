@@ -62,7 +62,7 @@ export class BedrockVersionLoader extends VersionListLoader<'bedrock'> {
     if (versions.length > 0) return versions;
 
     return fromRuntimeError(
-      new Error('BEDROCK_DOWNLOAD_LINKS_NOT_FOUND')
+      new Error('NO_STABLE_BEDROCK_VERSION_AVAILABLE')
     );
   }
 }

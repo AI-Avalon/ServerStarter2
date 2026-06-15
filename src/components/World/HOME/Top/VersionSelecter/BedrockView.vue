@@ -27,19 +27,24 @@ function buildBedrockVer(ver: AllBedrockVersion[number]): BedrockVersion {
   };
 }
 
-function updateWorldVersion(ver: AllBedrockVersion[number]) {
+function updateWorldVersion(
+  ver: AllBedrockVersion[number],
+  initializeSettings: boolean
+) {
   if (mainStore.world?.version) {
     mainStore.world.version = buildBedrockVer(ver);
-    if (!isError(mainStore.world.properties)) {
+    if (initializeSettings && !isError(mainStore.world.properties)) {
       mainStore.world.properties['server-port'] = 19132;
       mainStore.world.properties['query.port'] = 19132;
     }
-    mainStore.world.publish_setting = {
-      enabled: true,
-      provider: 'playit',
-      protocol: 'udp',
-    };
-    mainStore.world.ngrok_setting.use_ngrok = false;
+    if (initializeSettings) {
+      mainStore.world.publish_setting = {
+        enabled: true,
+        provider: 'playit',
+        protocol: 'udp',
+      };
+      mainStore.world.ngrok_setting.use_ngrok = false;
+    }
   }
 }
 
@@ -53,11 +58,11 @@ const bedrockVer = computed({
       ) ?? prop.versionData[0]
     );
   },
-  set: (val) => updateWorldVersion(val),
+  set: (val) => updateWorldVersion(val, false),
 });
 
-if (bedrockVer.value) {
-  updateWorldVersion(bedrockVer.value);
+if (mainStore.world?.version.type !== 'bedrock' && bedrockVer.value) {
+  updateWorldVersion(bedrockVer.value, true);
 }
 </script>
 

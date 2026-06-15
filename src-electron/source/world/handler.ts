@@ -339,7 +339,7 @@ export class WorldHandler {
     const savePath = this.getSavePath();
 
     // リモートからpull
-    const pullResult = this.pull(progress);
+    const pullResult = await this.pull(progress);
     if (isError(pullResult)) return withError(pullResult);
 
     const loadLocalServerJson = () => this.loadLocalServerJson();
@@ -646,11 +646,11 @@ export class WorldHandler {
 
     // tarファイルを生成
     const tar = await createTar(this.getSavePath(), true);
-    if (isError(tar)) return withError(tar);
 
     // リモートのデータを復旧
     const saveRecover = await this.saveLocalServerJson(localJson);
     if (isError(saveRecover)) return withError(saveRecover);
+    if (isError(tar)) return withError(tar);
 
     // tarファイルを保存
     const failableWrite = await backupPath.write(tar);
@@ -680,12 +680,13 @@ export class WorldHandler {
   private async runScheduledBackup(
     settings: WorldSettings,
     timing: 'beforeStart' | 'afterStop'
-  ) {
+  ): Promise<Failable<void>> {
     if (!this.shouldRunScheduledBackup(settings, timing)) return;
     const result = await this.backupExec();
-    if (isError(result.value)) return;
+    if (isError(result.value)) return result.value;
     settings.backup_setting.lastBackupTime = getCurrentTimestamp();
-    await this.saveLocalServerJson(settings);
+    const save = await this.saveLocalServerJson(settings);
+    if (isError(save)) return save;
   }
 
   /** ワールドにバックアップを復元 */
@@ -814,7 +815,8 @@ export class WorldHandler {
   ): Promise<Failable<number>> {
     if (
       beforeWorld.version.type !== 'bedrock' &&
-      beforeWorld.ngrok_setting.use_ngrok &&
+      beforeWorld.publish_setting.enabled &&
+      beforeWorld.publish_setting.provider === 'ngrok' &&
       ngrokToken
     ) {
       // Ngrokを使用する場合 開いてるポートを適当に使う
@@ -836,7 +838,7 @@ export class WorldHandler {
       const portIsUsed = !(await this.checkPortAvailability(port));
 
       if (portIsUsed) {
-        errorMessage.core.world.serverPortIsUsed({
+        return errorMessage.core.world.serverPortIsUsed({
           port,
         });
       }
@@ -890,7 +892,11 @@ export class WorldHandler {
     const settings = constructWorldSettings(beforeWorld);
     const savePath = this.getSavePath();
 
-    await this.runScheduledBackup(settings, 'beforeStart');
+    const beforeStartBackup = await this.runScheduledBackup(
+      settings,
+      'beforeStart'
+    );
+    if (isError(beforeStartBackup)) errors.push(beforeStartBackup);
 
     // ポート番号を取得
     const port = await this.definePortNumber(
@@ -907,6 +913,7 @@ export class WorldHandler {
     };
     const beforeServerPort = execServerProperties['server-port'];
     const beforeQueryport = execServerProperties['query.port'];
+    const beforeRegisteredPort = this.port;
 
     execServerProperties['server-port'] = port;
     execServerProperties['query.port'] = port;
@@ -925,7 +932,13 @@ export class WorldHandler {
       token: sysSettings.user.ngrokToken,
       port,
     });
-    if (isError(publishSession)) return withError(publishSession);
+    if (isError(publishSession)) {
+      this.port = beforeRegisteredPort;
+      execServerProperties['server-port'] = beforeServerPort;
+      execServerProperties['query.port'] = beforeQueryport;
+      await serverPropertiesFile.save(savePath, execServerProperties);
+      return withError(publishSession, errors);
+    }
 
     // 使用中フラグを立てて保存
     // 使用中フラグを折って保存を試みる (無理なら諦める)
@@ -992,19 +1005,21 @@ export class WorldHandler {
     // 使用中フラグを折って保存を試みる (無理なら諦める)
     settings.using = false;
     beforeWorld.last_date = getCurrentTimestamp();
-    await this.runScheduledBackup(settings, 'afterStop');
     const saveSub = progress.subtitle({ key: 'server.save.localSetting' });
     await serverJsonFile.save(savePath, settings);
     saveSub.delete();
+    const afterStopBackup = await this.runScheduledBackup(settings, 'afterStop');
+    if (isError(afterStopBackup)) errors.push(afterStopBackup);
 
     // pushを実行
     await this.push(progress);
 
     // サーバーの実行が失敗していたらエラー
-    if (isError(serverResult)) return withError(serverResult);
+    if (isError(serverResult)) return withError(serverResult, errors);
 
     // ワールド情報を再取得
     const afterWorld = await this.loadExec(progress);
+    afterWorld.errors.push(...errors);
 
     // ポート番号を復元
     if (isValid(afterWorld.value) && isValid(afterWorld.value.properties)) {

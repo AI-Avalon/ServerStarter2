@@ -24,4 +24,5 @@ export async function clearManagedRuntimeCache(
     const result = await path.remove();
     if (isError(result)) return result;
   }
+  return undefined;
 }

@@ -7,6 +7,7 @@ import { Failable } from 'app/src-electron/schema/error';
 import { BackupData } from 'app/src-electron/schema/filedata';
 import { Path } from 'app/src-electron/util/binary/path';
 import { errorMessage } from 'app/src-electron/util/error/construct';
+import { isError } from 'app/src-electron/util/error/error';
 import { getCurrentTimestamp } from 'app/src-electron/util/timestamp';
 import {
   BACKUP_DIRECTORY_NAME,
@@ -58,9 +59,23 @@ export async function pruneBackups(
         data: BackupData & { time?: Timestamp };
       } => !isError(item.data) && item.data.name === name
     )
-    .sort((a, b) => (b.data.time ?? 0) - (a.data.time ?? 0));
+    .sort((a, b) => {
+      const timeDiff = (b.data.time ?? 0) - (a.data.time ?? 0);
+      if (timeDiff !== 0) return timeDiff;
+      const suffixDiff = getBackupSuffixNumber(b.path) - getBackupSuffixNumber(a.path);
+      if (suffixDiff !== 0) return suffixDiff;
+      return b.path.basename().localeCompare(a.path.basename());
+    });
 
-  await Promise.all(backups.slice(maxBackups).map((backup) => backup.path.remove()));
+  const removed = await Promise.all(
+    backups.slice(maxBackups).map((backup) => backup.path.remove())
+  );
+  return removed.find(isError);
+}
+
+function getBackupSuffixNumber(path: Path) {
+  const match = path.stemname().match(/\((\d+)\)$/);
+  return match ? Number.parseInt(match[1]) : 0;
 }
 
 export async function parseBackUpPath(

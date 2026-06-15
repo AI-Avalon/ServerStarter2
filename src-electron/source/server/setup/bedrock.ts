@@ -26,8 +26,14 @@ export async function readyBedrockServer(
   if (version.platform === 'windows' && osPlatform !== 'windows-x64') {
     return fromRuntimeError(new Error('BEDROCK_WINDOWS_ONLY_ON_THIS_BUILD'));
   }
-  if (version.platform === 'linux' && osPlatform !== 'debian') {
-    return fromRuntimeError(new Error('BEDROCK_LINUX_REQUIRES_UBUNTU'));
+  if (
+    version.platform === 'linux' &&
+    osPlatform !== 'debian' &&
+    osPlatform !== 'redhat'
+  ) {
+    return fromRuntimeError(
+      new Error('BEDROCK_LINUX_REQUIRES_DEBIAN_OR_REDHAT_BASED')
+    );
   }
 
   const runtimeDir = getBedrockRuntimeDir(version);

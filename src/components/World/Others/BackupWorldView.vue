@@ -106,6 +106,7 @@ onMounted(() => {
         dense
         outlined
         :min="1"
+        :max="720"
         :label="$T('others.backup.intervalHours')"
         :disable="
           !mainStore.world.backup_setting.enabled ||
@@ -119,6 +120,7 @@ onMounted(() => {
         dense
         outlined
         :min="1"
+        :max="365"
         :label="$T('others.backup.maxBackups')"
         :disable="
           !mainStore.world.backup_setting.enabled ||

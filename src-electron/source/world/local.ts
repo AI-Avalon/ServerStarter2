@@ -283,6 +283,13 @@ function normalizePublishSetting(world: {
   if (world.publish_setting) return world.publish_setting;
 
   if (world.ngrok_setting?.use_ngrok) {
+    if (world.version?.type === 'bedrock') {
+      return {
+        enabled: true,
+        provider: 'playit',
+        protocol: 'udp',
+      };
+    }
     return {
       enabled: true,
       provider: 'ngrok',
