@@ -109,7 +109,7 @@ jobs:
     # 各osで並列ビルド
     strategy:
       matrix:
-        os: [macos-latest, windows-latest ,ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         new-ver: [true, false]
 
     runs-on: ${{ matrix.os }}
@@ -125,8 +125,8 @@ jobs:
           git checkout ${{ needs.create-commit.outputs.brench-name }}
 
       # Nodejsを使用
-      - name: Setup NodeJS Environment 18
-        uses: actions/setup-node@v2
+      - name: Setup NodeJS Environment 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'yarn'
@@ -137,43 +137,44 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git pull
-          yarn install
+          corepack enable
+          yarn install --frozen-lockfile
           yarn build
 
       # WindowsのビルドデータをArtifactとして一時保存
       - name: Upload Artifact Win
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.new-ver}}.msi
-          path: "${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.msi"
+          path: '${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.msi'
           retention-days: 1
 
       # MacのビルドデータをArtifactとして一時保存
       - name: Upload Artifact Mac
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.new-ver}}.pkg
-          path: "${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.pkg"
+          path: '${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.pkg'
           retention-days: 1
 
       # Debianのビルドデータを指定のパスに移動
       - name: Upload Artifact Debian
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.new-ver}}.deb
-          path: "${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.deb"
+          path: '${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.deb'
           retention-days: 1
 
       # Redhatのビルドデータを指定のパスに移動
       - name: Upload Artifact Redhat
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.new-ver}}.rpm
-          path: "${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.rpm"
+          path: '${{github.workspace}}/dist/electron/Packaged/ServerStarter.build.rpm'
           retention-days: 1
 
   # リリースを作成
@@ -216,7 +217,7 @@ jobs:
     steps:
       # 一時保存したアーティファクトをダウンロード
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: true.${{ matrix.ext }}
           path: true/
@@ -235,7 +236,7 @@ jobs:
 
       # 一時保存したアーティファクトをダウンロード(現行バージョン)
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: false.${{ matrix.ext }}
           path: false/

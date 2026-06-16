@@ -1,16 +1,13 @@
 import { ImageURI, PlayerUUID } from 'src-electron/schema/brands';
 import { Player } from 'src-electron/schema/player';
-import {
-  GetProfile,
-  UsernameToUUID,
-} from 'app/src-electron/source/player/minecraftApi';
+import * as MinecraftApi from 'app/src-electron/source/player/minecraftApi';
 import { isError } from 'app/src-electron/util/error/error';
 import { Failable } from 'app/src-electron/util/error/failable';
 
 export async function searchPlayerFromName(
   name: string
 ): Promise<Failable<Player>> {
-  const res = await UsernameToUUID(name);
+  const res = await MinecraftApi.UsernameToUUID(name);
   if (isError(res)) return res;
   return await searchPlayerFromUUID(res.uuid);
 }
@@ -30,7 +27,7 @@ export async function searchPlayerFromUUID(
   let avatar: ImageURI;
   let avatar_overlay: ImageURI;
 
-  const profile = await GetProfile(uuid);
+  const profile = await MinecraftApi.GetProfile(uuid);
   if (isError(profile)) return profile;
   if (profile.skin) {
     const skin = profile.skin;
@@ -71,19 +68,36 @@ export async function searchPlayerFromUUID(
 
 /** In Source Testing */
 if (import.meta.vitest) {
-  const { test, expect } = import.meta.vitest;
+  const { test, expect, vi } = import.meta.vitest;
   test('searchPlayerFromName', async () => {
     const { isValid } = await import('app/src-electron/util/error/error');
+    const uuid = '069a79f4-44e9-4726-a5be-fca90e38aaf5' as PlayerUUID;
+
+    const usernameToUUIDSpy = vi
+      .spyOn(MinecraftApi, 'UsernameToUUID')
+      .mockResolvedValue({ name: 'Notch', uuid });
+    const getProfileSpy = vi
+      .spyOn(MinecraftApi, 'GetProfile')
+      .mockResolvedValue({
+        name: 'Notch',
+        uuid,
+        slim: false,
+      });
 
     const res = await searchPlayerFromName('Notch');
 
+    expect(usernameToUUIDSpy).toHaveBeenCalledWith('Notch');
+    expect(getProfileSpy).toHaveBeenCalledWith(uuid);
     expect(isValid(res)).toBe(true);
     if (isValid(res)) {
       expect(res).not.toBeNull();
       expect(res.name).toBe('Notch');
-      expect(res.uuid).toBe('069a79f4-44e9-4726-a5be-fca90e38aaf5');
+      expect(res.uuid).toBe(uuid);
       expect(res.avatar).not.toBeNull();
       expect(res.avatar_overlay).not.toBeNull();
     }
+
+    usernameToUUIDSpy.mockRestore();
+    getProfileSpy.mockRestore();
   });
 }

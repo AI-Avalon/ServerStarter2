@@ -4,23 +4,26 @@ on: [pull_request]
 jobs:
   vitest:
     runs-on: ubuntu-latest
-    
+
     permissions:
       # Required to checkout the code
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-    
+
     steps:
       - uses: actions/checkout@v4
       - name: 'Install Node'
         uses: actions/setup-node@v4
         with:
-            node-version: '20.x'
+          node-version: '20.x'
+          cache: 'yarn'
       - name: 'Install Deps'
-        run: npm install
+        run: |
+          corepack enable
+          yarn install --frozen-lockfile
       - name: 'Execute Test'
-        run: npx vitest run --coverage --passWithNoTests
+        run: yarn vitest run --coverage --passWithNoTests
       - name: Coverage Report
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2.5.0

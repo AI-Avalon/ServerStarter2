@@ -9,7 +9,7 @@ import { isError } from 'app/src-electron/util/error/error';
 import { JsonSourceHandler } from 'app/src-electron/util/wrapper/jsonFile';
 import { ExecRuntime, getJarPath, ReadyVersion, RemoveVersion } from './base';
 import { constructExecPath, getNewForgeArgs } from './utils/forgeArgAnalyzer';
-import { VersionJson } from './utils/versionJson';
+import { getVersionJsonObj, VersionJson } from './utils/versionJson';
 import { getVanillaVersionJson } from './vanilla';
 
 function getServerID(version: ForgeVersion) {
@@ -224,6 +224,11 @@ if (import.meta.vitest) {
 
     const JVM_ARGS = ['JVM', 'ARGUMENT'];
 
+    const urlCreateReadStreamSpy = vi.spyOn(BytesData, 'fromURL');
+    urlCreateReadStreamSpy.mockImplementation(async () => {
+      return BytesData.fromText('installer');
+    });
+
     test.each([
       {
         genfiles: [
@@ -274,6 +279,11 @@ if (import.meta.vitest) {
       await outputPath.remove();
       // キャッシュの威力を試したいときは以下の行をコメントアウト
       await readyOperator.cachePath.remove();
+      await readyOperator.cachePath.child('version.json').writeJson(
+        getVersionJsonObj(ver21.download_url, true, undefined, {
+          component: 'java-runtime-delta',
+        })
+      );
 
       // `installer.jar`の実行によって必要なファイルが生成された体を再現する
       const execRuntime: ExecRuntime = vi.fn(async (options) => {

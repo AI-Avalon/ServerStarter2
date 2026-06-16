@@ -14,13 +14,14 @@ jobs:
         with:
           PATTERNS: |
             **/*.{ts,tsx,js,jsx,json,vue}
-      - uses: actions/setup-node@v3 #nodeをインストール & キャッシュを取得
+      - uses: actions/setup-node@v4 #nodeをインストール & キャッシュを取得
         with:
-          node-version: 18
+          node-version: 20
           cache: 'yarn'
       - name: Run Prettier # prettier自体を実行
         run: |
-          yarn
+          corepack enable
+          yarn install --frozen-lockfile
           yarn prettier --write ${{ env.GIT_DIFF_FILTERED }} --ignore-path .gitignore # 環境変数GIT_DIFF_FILTEREDに差分のあるファイルが列挙されている
         if: env.GIT_DIFF
       - uses: stefanzweifel/git-auto-commit-action@v4 # フォーマットしたファイルをコミット

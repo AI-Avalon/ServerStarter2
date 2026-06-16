@@ -235,6 +235,7 @@ if (import.meta.vitest) {
   const { describe, test, expect } = import.meta.vitest;
 
   describe('runtime installer', async () => {
+    const { createHash } = await import('crypto');
     const path = await import('path');
 
     // 一時使用フォルダを初期化
@@ -244,23 +245,108 @@ if (import.meta.vitest) {
     );
     await workPath.emptyDir();
 
+    const runtimeComponents = [
+      'jre-legacy',
+      'java-runtime-alpha',
+      'java-runtime-beta',
+      'java-runtime-gamma',
+      'java-runtime-delta',
+    ] as const;
+    const manifestUrl = (os: OsPlatform, runtime: string) =>
+      `mock://runtime-manifest/${os}/${runtime}`;
+    const fileUrl = (os: OsPlatform, runtime: string, file: string) =>
+      `mock://runtime-file/${os}/${runtime}/${file}`;
+    const sha1 = (value: string) =>
+      createHash('sha1').update(value).digest('hex');
+    const runtimeManifestEntry = (os: OsPlatform, runtime: string) => [
+      {
+        manifest: {
+          sha1: sha1(manifestUrl(os, runtime)),
+          size: 1,
+          url: manifestUrl(os, runtime),
+        },
+        version: {
+          name: runtime,
+          released: '2026-01-01T00:00:00Z',
+        },
+      },
+    ];
+    const osManifest = (
+      os: OsPlatform,
+      components: readonly (typeof runtimeComponents)[number][]
+    ) =>
+      Object.fromEntries(
+        components.map((runtime) => [
+          runtime,
+          runtimeManifestEntry(os, runtime),
+        ])
+      );
+    const runtimeManifest = {
+      linux: osManifest('debian', runtimeComponents),
+      'mac-os': osManifest('mac-os', runtimeComponents),
+      'mac-os-arm64': osManifest('mac-os-arm64', [
+        'java-runtime-gamma',
+        'java-runtime-delta',
+      ]),
+      'windows-x64': osManifest('windows-x64', runtimeComponents),
+      'windows-arm64': {},
+    };
+    const manifestContent = (url: string) => {
+      const [, os, runtime] =
+        url.match(/^mock:\/\/runtime-manifest\/(.+)\/(.+)$/) ?? [];
+      const java = fileUrl(os as OsPlatform, runtime, 'java');
+      const javaw = fileUrl(os as OsPlatform, runtime, 'javaw');
+
+      if (os === 'windows-x64') {
+        return {
+          files: {
+            'bin/java.exe': {
+              type: 'file',
+              executable: true,
+              downloads: { raw: { url: java, sha1: sha1(java), size: 1 } },
+            },
+            'bin/javaw.exe': {
+              type: 'file',
+              executable: true,
+              downloads: { raw: { url: javaw, sha1: sha1(javaw), size: 1 } },
+            },
+          },
+        };
+      }
+
+      return {
+        files: {
+          'bin/java': {
+            type: 'file',
+            executable: true,
+            downloads: { raw: { url: java, sha1: sha1(java), size: 1 } },
+          },
+        },
+      };
+    };
+
     // 実際にはUrlにアクセスせず、url文字列を結果として返す
     // cf) Mockを使わない場合，テストがエラーになることがあるが，これはVitest上でTimeoutがうまく設定できていないことが原因
     // Electron(Chromium)上で動かす場合はTimeoutが２分程度に緩和されるため，テストではMockで代用
     // @see https://scrapbox.io/nwtgck/Google_Chrome%E3%81%AEfetch()%E3%81%AE%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E3%81%AE%E6%99%82%E9%96%93
+    const fromURLSpy = vi.spyOn(BytesData, 'fromURL');
+    fromURLSpy.mockImplementation(async (url: string) => {
+      if (url === minecraftRuntimeManifestUrl) {
+        return BytesData.fromText(JSON.stringify(runtimeManifest));
+      }
+      if (url.startsWith('mock://runtime-manifest/')) {
+        return BytesData.fromText(JSON.stringify(manifestContent(url)));
+      }
+      return BytesData.fromText(url);
+    });
+
     const urlCreateReadStreamSpy = vi.spyOn(BytesData, 'fromPathOrUrl');
     urlCreateReadStreamSpy.mockImplementation(async (path, url) => {
       // すでにダウンロード済みのデータがある場合は通常通り利用する
       const data = await BytesData.fromPath(path);
       if (isValid(data)) return data;
 
-      // 全OSの全Runtime情報が記載されたのManifestのみ実データを使う
-      let resData: Failable<BytesData>;
-      if (url.startsWith('https://launchermeta')) {
-        resData = await BytesData.fromURL(url);
-      } else {
-        resData = await BytesData.fromText(url);
-      }
+      const resData = await BytesData.fromText(url);
       if (isError(resData)) return resData;
 
       // 本来と同じように取得した（ことになっているデータ）はファイルに書き込む
