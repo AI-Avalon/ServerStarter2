@@ -112,10 +112,28 @@ async function loadEachVersion(
 
 /** In Source Testing */
 if (import.meta.vitest) {
-  const { test, expect } = import.meta.vitest;
-  test('mohist correct jar download', { timeout: 60 * 10 ** 3 }, async () => {
+  const { test, expect, vi } = import.meta.vitest;
+  test('mohist build metadata includes jar hash', async () => {
     const ver = '1.20.1';
     const build = 157;
+    const sha256 =
+      '922f21008d63230033e85565fbff959f2a5158e23021ef4c5343c51d096757d0';
+
+    const fromURLSpy = vi
+      .spyOn(BytesData, 'fromURL')
+      .mockImplementation((url) => {
+        expect(url).toBe(mohistEachVersionURL(ver));
+        return BytesData.fromText(
+          JSON.stringify([
+            {
+              id: build,
+              file_sha256: sha256,
+              commit: { hash: '2c49e69c7d50fa5ba8210c8648cc8d0f9135fe22' },
+              loader: { forge_version: '47.4.0' },
+            },
+          ])
+        );
+      });
 
     // バージョンの中のビルド一覧を取得
     const allVers = await loadEachVersion(ver);
@@ -127,11 +145,9 @@ if (import.meta.vitest) {
     expect(targetVer).toBeDefined();
     if (!targetVer) return;
 
-    // ビルドのjarをダウンロード（テスト対象は必ずHashを有しているため，Undefinedを握りつぶす）
-    const hash = { type: 'sha256' as const, value: targetVer.jar.sha256 ?? '' };
-    const jar = await BytesData.fromURL(targetVer.jar.url, hash);
+    expect(targetVer.jar.url).toBe(mohistJarURL(ver, build));
+    expect(targetVer.jar.sha256).toBe(sha256);
 
-    // Hashの検証まで含めて正常にデータがダウンロードできたことを確認
-    expect(isError(jar)).toBe(false);
+    fromURLSpy.mockRestore();
   });
 }

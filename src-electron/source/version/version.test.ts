@@ -14,6 +14,55 @@ urlCreateReadStreamSpy.mockImplementation(async (url: string) => {
     'https://launchermeta.mojang.com/mc/game/version_manifest_v2.json';
   if (url === verManifestURL) {
     return BytesData.fromPath(dummyAssets.child('version_manifest_v2.json'));
+  } else if (url === 'https://meta.fabricmc.net/v2/versions/loader') {
+    return BytesData.fromText(
+      JSON.stringify([
+        {
+          separator: '.',
+          build: 1,
+          maven: 'net.fabricmc:fabric-loader:0.16.0',
+          version: '0.16.0',
+          stable: true,
+        },
+      ])
+    );
+  } else if (url === 'https://meta.fabricmc.net/v2/versions/installer') {
+    return BytesData.fromText(
+      JSON.stringify([
+        {
+          url: 'https://example.com/fabric-installer.jar',
+          maven: 'net.fabricmc:fabric-installer:1.0.0',
+          version: '1.0.0',
+          stable: true,
+        },
+      ])
+    );
+  } else if (url === 'https://meta.fabricmc.net/v2/versions/game') {
+    return BytesData.fromText(
+      JSON.stringify([
+        { version: '1.21', stable: true },
+        { version: '18w43b', stable: false },
+      ])
+    );
+  } else if (url === 'https://api.mohistmc.com/project/mohist/versions') {
+    return BytesData.fromText(
+      JSON.stringify([{ name: '1.20.1' }, { name: '1.7.10' }])
+    );
+  } else if (
+    url.startsWith('https://api.mohistmc.com/project/mohist/') &&
+    url.endsWith('/builds')
+  ) {
+    return BytesData.fromText(
+      JSON.stringify([
+        {
+          id: 1,
+          file_sha256:
+            '922f21008d63230033e85565fbff959f2a5158e23021ef4c5343c51d096757d0',
+          commit: { hash: 'test-build' },
+          loader: { forge_version: '47.4.0' },
+        },
+      ])
+    );
   } else if (url.endsWith('.xml')) {
     return BytesData.fromPath(dummyAssets.child('sample.xml'));
   } else if (url.endsWith('.jar')) {
