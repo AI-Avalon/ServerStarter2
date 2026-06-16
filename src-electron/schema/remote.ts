@@ -3,7 +3,9 @@
  */
 import { z } from 'zod';
 import { ImageURI, PlayerUUID, RemoteWorldName, Timestamp } from './brands';
+import { BackupScheduleSetting } from './backup';
 import { NgrokSetting } from './ngrok';
+import { PublishSetting } from './publish';
 import { Version } from './version';
 
 export const GithubRemoteFolder = z.object({
@@ -51,5 +53,9 @@ export const RemoteWorld = z.object({
   avater_path: ImageURI.optional(),
   /** Ngrokによるポート開放不要化機能を利用するか */
   ngrok_setting: NgrokSetting,
+  /** ngrok/playit等による外部公開設定 */
+  publish_setting: PublishSetting,
+  /** 定期バックアップ設定 */
+  backup_setting: BackupScheduleSetting,
 });
 export type RemoteWorld = z.infer<typeof RemoteWorld>;

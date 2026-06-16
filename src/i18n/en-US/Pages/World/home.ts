@@ -37,6 +37,7 @@ export const enUSHome: MessageSchema['home'] = {
     forge: 'Forge',
     mohistmc: 'MohistMC',
     fabric: 'Fabric',
+    bedrock: 'Bedrock (Official)',
   },
   serverDescription: {
     vanilla: 'Official Minecraft server. Provides standard multiplay server.',
@@ -47,6 +48,8 @@ export const enUSHome: MessageSchema['home'] = {
       'Server based on Forge, but allows both mods and plugins to be installed.',
     fabric:
       'The server that the base for mods, which is a different system from Forge.',
+    bedrock:
+      'Official dedicated server for Minecraft Bedrock Edition. UDP publishing uses playit.',
   },
   icon: 'Change server icon',
   ngrok: {
@@ -112,6 +115,20 @@ export const enUSHome: MessageSchema['home'] = {
       save: 'Save your registration',
       imageDetail: 'Image Detail',
     },
+  },
+  publish: {
+    title: 'Publishing',
+    provider: 'Publishing provider',
+    none: 'Do not publish',
+    ngrok: 'ngrok (Java/TCP)',
+    playit: 'playit.gg (TCP/UDP)',
+    enabled: 'Use external publishing',
+    disabled: 'Do not use external publishing',
+    bedrockNotice:
+      'Bedrock uses UDP, so it cannot be published through ngrok. ServerStarter2 uses the playit.gg agent.',
+    playitNotice:
+      'On first use, the playit.gg agent is downloaded into the app cache. Open the displayed claim URL to register the agent.',
+    reinstallPlayit: 'Re-download playit agent',
   },
   setting: {
     title: 'Start up settings',

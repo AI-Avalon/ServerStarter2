@@ -35,6 +35,7 @@ export const jaHome = {
     forge: 'Forge',
     mohistmc: 'MohistMC',
     fabric: 'Fabric',
+    bedrock: 'Bedrock (公式)',
   },
   serverDescription: {
     vanilla: 'Minecraft公式のサーバー。標準的なマルチプレイの機能を提供する。',
@@ -45,6 +46,8 @@ export const jaHome = {
     mohistmc:
       'Forgeをベースとしつつ、MODとプラグインの両者を導入可能としたサーバー。',
     fabric: 'MODの前提サーバー。Forgeとは別のシステムとなっている。',
+    bedrock:
+      'Minecraft Bedrock Edition向けの公式専用サーバー。UDP公開にはplayitを利用します。',
   },
   icon: 'アイコンを変更',
   ngrok: {
@@ -110,6 +113,20 @@ export const jaHome = {
       save: '登録内容を保存',
       imageDetail: '画像の詳細',
     },
+  },
+  publish: {
+    title: '公開設定',
+    provider: '公開方法',
+    none: '公開しない',
+    ngrok: 'ngrok (Java/TCP)',
+    playit: 'playit.gg (TCP/UDP)',
+    enabled: '外部公開を利用する',
+    disabled: '外部公開を利用しない',
+    bedrockNotice:
+      'BedrockはUDPを使うためngrokでは公開できません。playit.gg agentを利用します。',
+    playitNotice:
+      '初回起動時にplayit.gg agentをアプリ内キャッシュへダウンロードします。表示されたclaim URLを開いてagentを登録してください。',
+    reinstallPlayit: 'playit agentを再取得',
   },
   setting: {
     title: '起動設定',

@@ -29,7 +29,7 @@ export function runServer(
     const readyResult = await readyRunServer(cwdPath, id, settings, progress);
     if (isError(readyResult)) return readyResult;
 
-    const { javaArgs, javaPath } = readyResult;
+    const { args, processPath, env } = readyResult;
 
     // latest.logをアーカイブ化する
     const loghandler = new WorldLogHandler(cwdPath);
@@ -48,11 +48,12 @@ export function runServer(
     process = serverProcess(
       cwdPath,
       id,
-      javaPath,
-      javaArgs,
+      processPath,
+      args,
       console,
       onStart,
-      onFinish
+      onFinish,
+      { env }
     );
     const runresult = await process;
     process = undefined;

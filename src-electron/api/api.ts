@@ -23,6 +23,7 @@ import {
 import { ServerStartNotification } from '../schema/server';
 import { StaticResouce } from '../schema/static';
 import { SystemSettings } from '../schema/system';
+import { ManagedRuntimeCache } from '../source/system/runtimeCache';
 import { AllVersion, VersionType } from '../schema/version';
 import { World, WorldAbbr, WorldEdited, WorldID } from '../schema/world';
 import { IAPI, IBackAPI, IFrontAPI } from './types';
@@ -232,6 +233,11 @@ export interface API extends IAPI {
 
     /** ワールド名が使用可能かどうかを検証する */
     GetGlobalIP: () => Promise<Failable<string>>;
+
+    /** Java/Bedrock/playitのアプリ管理下キャッシュを削除して再取得可能にする */
+    ClearManagedRuntimeCache: (
+      target: ManagedRuntimeCache
+    ) => Promise<Failable<void>>;
 
     /** ファイル/ディレクトリ を選択する */
     PickDialog: ((

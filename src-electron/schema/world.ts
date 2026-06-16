@@ -16,9 +16,11 @@ import {
   PluginData,
   WorldFileData,
 } from './filedata';
+import { BackupScheduleSetting } from './backup';
 import { MemorySettings } from './memory';
 import { NgrokSetting } from './ngrok';
 import { PlayerSetting } from './player';
+import { PublishSetting } from './publish';
 import { Remote } from './remote';
 import { ServerProperties } from './serverproperty';
 import { Version } from './version';
@@ -80,6 +82,12 @@ export interface WorldBase extends WorldAbbr {
 
   /** Ngrokによるポート開放不要化機能を利用するか */
   ngrok_setting: NgrokSetting;
+
+  /** ngrok/playit等による外部公開設定 */
+  publish_setting: PublishSetting;
+
+  /** 定期バックアップ設定 */
+  backup_setting: BackupScheduleSetting;
 }
 
 export type WorldAdditional = {

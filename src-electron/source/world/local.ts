@@ -10,6 +10,7 @@ import {
   WithError,
 } from 'app/src-electron/schema/error';
 import { PlayerSetting } from 'app/src-electron/schema/player';
+import { PublishSetting } from 'app/src-electron/schema/publish';
 import { Version } from 'app/src-electron/schema/version';
 import { World, WorldEdited, WorldID } from 'app/src-electron/schema/world';
 import { Path } from 'app/src-electron/util/binary/path';
@@ -140,6 +141,8 @@ export async function loadLocalFiles(
     properties,
     players,
     ngrok_setting: worldSettings.ngrok_setting,
+    publish_setting: normalizePublishSetting(worldSettings),
+    backup_setting: worldSettings.backup_setting,
   };
 
   return withError(world, errors);
@@ -266,8 +269,40 @@ export function constructWorldSettings(world: World | WorldEdited) {
     last_id: world.last_id,
     using: world.using,
     ngrok_setting: world.ngrok_setting,
+    publish_setting: normalizePublishSetting(world),
+    backup_setting: world.backup_setting,
   };
   return worldSettings;
+}
+
+function normalizePublishSetting(world: {
+  publish_setting?: PublishSetting;
+  ngrok_setting?: { use_ngrok?: boolean; remote_addr?: string };
+  version?: Version;
+}): PublishSetting {
+  if (world.publish_setting) return world.publish_setting;
+
+  if (world.ngrok_setting?.use_ngrok) {
+    if (world.version?.type === 'bedrock') {
+      return {
+        enabled: true,
+        provider: 'playit',
+        protocol: 'udp',
+      };
+    }
+    return {
+      enabled: true,
+      provider: 'ngrok',
+      protocol: 'tcp',
+      remote_addr: world.ngrok_setting.remote_addr,
+    };
+  }
+
+  return {
+    enabled: false,
+    provider: 'none',
+    protocol: world.version?.type === 'bedrock' ? 'udp' : 'tcp',
+  };
 }
 
 const VANILLA_NETHER_DIM = `${LEVEL_NAME}/DIM-1`;
@@ -301,6 +336,7 @@ export async function formatWorldDirectory(
     forge: 'vanilla',
     mohistmc: 'plugin',
     fabric: 'vanilla',
+    bedrock: 'vanilla',
   };
   const next = directoryTypeMap[version.type];
 

@@ -6,6 +6,7 @@ import { BytesData } from 'app/src-electron/util/binary/bytesData';
 import { isError } from 'app/src-electron/util/error/error';
 import { getBytesFile } from 'app/src-electron/util/github/rest';
 import { updateMessage } from './message';
+import { notifyUpdateError } from '../notify';
 
 /** macの最新版をダウンロードしてインストールして再起動 */
 export const installMac = async (
@@ -15,7 +16,10 @@ export const installMac = async (
   const dest = mainPath.child('updater.pkg');
   const data = await getBytesFile(pkgurl, pat);
 
-  if (isError(data)) return;
+  if (isError(data)) {
+    await notifyUpdateError(data);
+    return;
+  }
   await data.write(dest.str(), true);
 
   const sys = await getSystemSettings();
@@ -28,7 +32,10 @@ sudo installer -pkg ${dest.absolute().strQuoted()} -target /
 open -a "${app.getPath('exe')}"
 exit 0
 `);
-  if (isError(script)) return;
+  if (isError(script)) {
+    await notifyUpdateError(script);
+    return;
+  }
   await script.write(sh.str(), true);
 
   const sub = spawn('open', ['-a', 'Terminal', 'updater.sh'], {

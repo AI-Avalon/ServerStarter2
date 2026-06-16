@@ -14,6 +14,11 @@ export const jaOthers = {
     recoverFromBackup: 'バックアップから復旧',
     madeBackup: '{world}のバックアップを作成しました',
     recovered: 'ワールドの復旧が完了しました',
+    scheduleEnabled: '定期バックアップを有効にする',
+    intervalHours: 'バックアップ間隔 (時間)',
+    maxBackups: '最大保持数',
+    beforeStart: 'サーバー起動前に作成',
+    afterStop: 'サーバー停止後に作成',
   },
   worldFolder: {
     title: 'ワールドフォルダ',

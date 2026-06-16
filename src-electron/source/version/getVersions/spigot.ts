@@ -4,6 +4,7 @@ import { Path } from 'app/src-electron/util/binary/path';
 import { isError } from 'app/src-electron/util/error/error';
 import { AllSpigotVersion, VersionId } from '../../../schema/version';
 import { VersionListLoader } from './base';
+import { getVersionMainfest } from './manifest';
 
 const SPIGOT_VERSIONS_URL = 'https://hub.spigotmc.org/versions/';
 
@@ -38,10 +39,17 @@ export class SpigotVersionLoader extends VersionListLoader<'spigot'> {
         }
       });
 
-    // idsをバージョン順に並び替え
-    await this.sortIds(ids);
+    const manifest = await getVersionMainfest(this.cachePath, true);
+    if (isError(manifest)) return manifest;
+    const vanillaReleaseIds = new Set(
+      manifest.versions.filter((x) => x.type === 'release').map((x) => x.id)
+    );
+    const filteredIds = ids.filter((id) => vanillaReleaseIds.has(id));
 
-    return ids
+    // idsをバージョン順に並び替え
+    await this.sortIds(filteredIds);
+
+    return filteredIds
       .filter((id) => !REMOVE_VERSIONS.includes(id))
       .map((id) => ({
         id: id as VersionId,

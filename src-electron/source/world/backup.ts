@@ -7,6 +7,7 @@ import { Failable } from 'app/src-electron/schema/error';
 import { BackupData } from 'app/src-electron/schema/filedata';
 import { Path } from 'app/src-electron/util/binary/path';
 import { errorMessage } from 'app/src-electron/util/error/construct';
+import { isError } from 'app/src-electron/util/error/error';
 import { getCurrentTimestamp } from 'app/src-electron/util/timestamp';
 import {
   BACKUP_DIRECTORY_NAME,
@@ -30,6 +31,51 @@ export function getBackUpPath(container: WorldContainer, name: WorldName) {
     i++;
   }
   return path;
+}
+
+export async function pruneBackups(
+  container: WorldContainer,
+  name: WorldName,
+  maxBackups: number
+): Promise<Failable<void>> {
+  const directory = worldContainerToPath(container).child(BACKUP_DIRECTORY_NAME);
+  if (!directory.exists()) return;
+
+  const files = await directory.iter();
+  if (isError(files)) return files;
+
+  const backups = (
+    await Promise.all(
+      files
+        .filter((path) => path.extname() === `.${BACKUP_EXT}`)
+        .map(async (path) => ({ path, data: await parseBackUpPath(path) }))
+    )
+  )
+    .filter(
+      (
+        item
+      ): item is {
+        path: Path;
+        data: BackupData & { time?: Timestamp };
+      } => !isError(item.data) && item.data.name === name
+    )
+    .sort((a, b) => {
+      const timeDiff = (b.data.time ?? 0) - (a.data.time ?? 0);
+      if (timeDiff !== 0) return timeDiff;
+      const suffixDiff = getBackupSuffixNumber(b.path) - getBackupSuffixNumber(a.path);
+      if (suffixDiff !== 0) return suffixDiff;
+      return b.path.basename().localeCompare(a.path.basename());
+    });
+
+  const removed = await Promise.all(
+    backups.slice(maxBackups).map((backup) => backup.path.remove())
+  );
+  return removed.find(isError);
+}
+
+function getBackupSuffixNumber(path: Path) {
+  const match = path.stemname().match(/\((\d+)\)$/);
+  return match ? Number.parseInt(match[1]) : 0;
 }
 
 export async function parseBackUpPath(

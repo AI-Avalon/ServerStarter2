@@ -140,6 +140,18 @@ export async function newWorld(): Promise<WithError<Failable<World>>> {
     ngrok_setting: {
       use_ngrok: true,
     },
+    publish_setting: {
+      enabled: true,
+      provider: 'ngrok',
+      protocol: 'tcp',
+    },
+    backup_setting: {
+      enabled: false,
+      intervalHours: 24,
+      maxBackups: 10,
+      beforeStart: false,
+      afterStop: false,
+    },
   };
 
   return withError(world);

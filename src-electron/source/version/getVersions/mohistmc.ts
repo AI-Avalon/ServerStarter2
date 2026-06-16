@@ -18,12 +18,14 @@ const mohistEachVersionZod = z
     id: z.number(),
     file_sha256: z.string().optional(),
     build_date: z.string().optional(),
-    commit: z.object({
-      hash: z.string(),
-      changelog: z.string(),
-      author: z.string(),
-      commit_date: z.string(),
-    }),
+    commit: z
+      .object({
+        hash: z.string().optional(),
+        changelog: z.string().optional(),
+        author: z.string().optional(),
+        commit_date: z.string().optional(),
+      })
+      .optional(),
     loader: z
       .object({
         forge_version: z.string().optional(),
@@ -31,6 +33,7 @@ const mohistEachVersionZod = z
       })
       .optional(),
   })
+  .passthrough()
   .array()
   .min(1);
 
@@ -91,7 +94,7 @@ async function loadEachVersion(
     .map((b) => {
       return {
         id: b.id,
-        name: b.commit.hash,
+        name: b.commit?.hash ?? `${versionName}-${b.id}`,
         forge_version: b.loader?.forge_version,
         jar: {
           sha256: b.file_sha256,

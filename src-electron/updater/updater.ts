@@ -5,7 +5,7 @@ import { osPlatform } from '../util/os/os';
 import { getLatestRelease } from './fetch';
 import { installMac } from './installer/mac';
 import { installWindows } from './installer/windows';
-import { notifyUpdate } from './notify';
+import { notifyUpdate, notifyUpdateError } from './notify';
 import { getSystemVersion } from './version';
 
 /**
@@ -43,12 +43,13 @@ export async function update() {
   const update = await checkUpdate(PAT);
 
   if (update === false) {
-    logger.error(update);
+    logger.info('already latest');
     return;
   }
 
   if (isError(update)) {
     logger.error(update);
+    await notifyUpdateError(update);
     return;
   }
   logger.info(update);

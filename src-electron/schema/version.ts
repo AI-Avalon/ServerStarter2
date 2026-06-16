@@ -7,6 +7,7 @@ export const versionTypes = [
   'forge',
   'mohistmc',
   'fabric',
+  'bedrock',
 ] as const;
 
 export const VersionId = z.string().brand('VanillaVersionId');
@@ -67,6 +68,14 @@ export const FabricVersion = z.object({
   installer: z.string(),
 });
 export type FabricVersion = z.infer<typeof FabricVersion>;
+
+export const BedrockVersion = z.object({
+  type: z.literal('bedrock'),
+  id: VersionId,
+  platform: z.enum(['windows', 'linux']),
+  url: z.string(),
+});
+export type BedrockVersion = z.infer<typeof BedrockVersion>;
 
 export const AllVanillaVersion = z
   .object({
@@ -150,6 +159,15 @@ export const AllFabricVersion = z.object({
 });
 export type AllFabricVersion = z.infer<typeof AllFabricVersion>;
 
+export const AllBedrockVersion = z
+  .object({
+    id: VersionId,
+    platform: z.enum(['windows', 'linux']),
+    url: z.string(),
+  })
+  .array();
+export type AllBedrockVersion = z.infer<typeof AllBedrockVersion>;
+
 export const Version = z.discriminatedUnion('type', [
   UnknownVersion,
   VanillaVersion,
@@ -158,6 +176,7 @@ export const Version = z.discriminatedUnion('type', [
   ForgeVersion,
   MohistmcVersion,
   FabricVersion,
+  BedrockVersion,
 ]);
 export type Version = z.infer<typeof Version>;
 
@@ -170,6 +189,7 @@ export const AllVersion = z.union([
   AllForgeVersion,
   AllMohistmcVersion,
   AllFabricVersion,
+  AllBedrockVersion,
 ]);
 export type AllVersion<T extends VersionType> = T extends 'vanilla'
   ? AllVanillaVersion
@@ -183,4 +203,6 @@ export type AllVersion<T extends VersionType> = T extends 'vanilla'
   ? AllMohistmcVersion
   : T extends 'fabric'
   ? AllFabricVersion
+  : T extends 'bedrock'
+  ? AllBedrockVersion
   : never;

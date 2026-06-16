@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useSystemStore } from 'src/stores/SystemStore';
 import { setScrollTop } from 'src/components/World/HOME/scroll';
-import NgrokView from 'src/components/World/HOME/Others/NgrokView.vue';
+import PublishView from 'src/components/World/HOME/Others/PublishView.vue';
 import WorldDeleteView from 'src/components/World/HOME/Others/WorldDeleteView.vue';
 import RunningBtn from 'src/components/World/HOME/RunningBtn.vue';
 import VersionSelecterView from 'src/components/World/HOME/Top/VersionSelecterView.vue';
@@ -43,8 +43,8 @@ setScrollTop(scrollTop);
       </div>
 
       <!-- Others -->
-      <h1 class="q-pt-lg">{{ $t('home.ngrok.title') }}</h1>
-      <NgrokView />
+      <h1 class="q-pt-lg">{{ $t('home.publish.title') }}</h1>
+      <PublishView />
 
       <h1 class="q-pt-lg">{{ $t('systemsetting.general.autoShutdown') }}</h1>
       <q-checkbox

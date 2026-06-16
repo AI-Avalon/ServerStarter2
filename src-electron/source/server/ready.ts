@@ -12,6 +12,10 @@ import { Failable } from 'app/src-electron/util/error/failable';
 import { osPlatform } from 'app/src-electron/util/os/os';
 import { GroupProgressor } from '../../common/progress';
 import { ExecRuntime } from '../version/readyVersions/base';
+import {
+  getBedrockRunEnvironment,
+  readyBedrockServerFiles,
+} from './setup/bedrock';
 import { WorldSettings } from '../world/files/json';
 import { getAdditionalJavaArgument } from './setup/javaArgs';
 import { getMemoryArguments } from './setup/memory';
@@ -22,7 +26,27 @@ export async function readyRunServer(
   id: WorldID,
   settings: WorldSettings,
   progress: GroupProgressor
-): Promise<Failable<{ javaArgs: string[]; javaPath: Path }>> {
+): Promise<
+  Failable<{
+    args: string[];
+    processPath: Path;
+    env?: NodeJS.ProcessEnv;
+  }>
+> {
+  if (settings.version.type === 'bedrock') {
+    progress.title({ key: 'server.readyVersion.title' });
+    const executablePath = await readyBedrockServerFiles(
+      settings.version,
+      cwdPath
+    );
+    if (isError(executablePath)) return executablePath;
+    return {
+      args: [],
+      processPath: executablePath,
+      env: getBedrockRunEnvironment(),
+    };
+  }
+
   async function readyRuntime(runtime: Runtime) {
     // 実行javaを用意
     const javaSub = progress.subGroup();
@@ -131,5 +155,5 @@ export async function readyRunServer(
   const customJvmArgs = [...memory, ...user];
   const javaArgs = server.getCommand({ jvmArgs: customJvmArgs });
 
-  return { javaArgs, javaPath };
+  return { args: javaArgs, processPath: javaPath };
 }

@@ -5,11 +5,12 @@ import { getSystemSettings } from 'app/src-electron/source/stores/system';
 import { isError } from 'app/src-electron/util/error/error';
 import { getBytesFile } from 'app/src-electron/util/github/rest';
 import { updateMessage } from './message';
+import { notifyUpdateError } from '../notify';
 
 /**
  * windowsの最新版をダウンロードしてインストールして再起動
  *
- * アップデートに失敗してもエラーで処理を止める必要がないため握りつぶす
+ * アップデートに失敗した場合は通知だけ行い、アプリの処理は中断しない
  */
 export const installWindows = async (
   msiurl: string,
@@ -18,10 +19,16 @@ export const installWindows = async (
   const dest = mainPath.child('updater.msi');
 
   const data = await getBytesFile(msiurl, pat);
-  if (isError(data)) return;
+  if (isError(data)) {
+    await notifyUpdateError(data);
+    return;
+  }
 
   const writeUpdater = await data.write(dest.path, true);
-  if (isError(writeUpdater)) return;
+  if (isError(writeUpdater)) {
+    await notifyUpdateError(writeUpdater);
+    return;
+  }
 
   const sys = await getSystemSettings();
 
@@ -31,7 +38,10 @@ echo ${updateMessage[sys.user.language].main}
 msiexec /i updater.msi /qb
 start "" "${app.getPath('exe')}"
 exit`);
-  if (isError(writeBat)) return;
+  if (isError(writeBat)) {
+    await notifyUpdateError(writeBat);
+    return;
+  }
 
   const sub = spawn('start', ['/min', '""', 'updater.bat'], {
     cwd: mainPath.path,
